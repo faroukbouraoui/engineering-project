@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   web:
-    image: 
+    image: faroukbr/cloud-django-web
     container_name: cloud-django-web
     env_file: .env
     restart: always
