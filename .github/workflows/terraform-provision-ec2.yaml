@@ -1,0 +1,61 @@
+name: "Terraform Pipeline Provision EC2"
+
+on:
+ push:
+   branches: ['master' , 'main']
+ pull_request:
+   branches: ['master', 'main']
+
+permissions:
+    contents: write   
+
+env:
+ # verbosity setting for Terraform logs
+  TF_LOG: INFO
+  # Credentials for deployment to AWS
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  TF_CLOUD_ORGANIZATION: "farouk"
+  TF_WORKSPACE: "terra-house-1"
+  TF_API_TOKEN: ${{ secrets.TF_API_TOKEN}}
+  CONFIG_DIRECTORY: "./deployments/terraform/terraform-aws-ec2-tf/"
+
+ 
+jobs:
+ terraform:
+   name: "Terraform Pipeline Provision EC2 with TF Cloud"
+   runs-on: ubuntu-latest
+   defaults:
+     run:
+       shell: bash
+       # We keep Terraform files in the terraform directory.
+       working-directory: ./deployments/terraform/terraform-aws-ec2-tf/terraform
+ 
+   steps:
+     - name: Checkout the repository to the runner
+       uses: actions/checkout@v2
+ 
+     - name: Setup Terraform with specified version on the runner
+       uses: hashicorp/setup-terraform@v2
+       with:
+         terraform_version: 1.3.0
+    
+     - name: Terraform init 
+       id: init
+       run: terraform init -lock=false
+      #  env:
+      #     TF_CLI_ARGS_init: '-backend-config="token=${{ secrets.TF_API_TOKEN }}"'
+ 
+     - name: Terraform format
+       id: fmt
+       run: terraform fmt
+    
+     - name: Terraform validate
+       id: validate
+       run: terraform validate
+       env:
+          GITHUB_TOKEN: ${{ secrets.G_TOKEN}}
+          TFE_TOKEN: ${{ secrets.TF_API_TOKEN }}
+ 
+     - name: Terraform Apply
+       run: terraform apply -auto-approve -input=false -lock=false
